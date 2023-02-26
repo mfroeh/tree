@@ -76,7 +76,9 @@ fn main() {
     // Todo: Handle errors here
 
     match validate(&cli) {
-        Ok(_) => println!("{}", tree(&cli).unwrap()),
+        Ok(_) => {
+            tree(&cli).unwrap();
+        }
         Err(e) => println!("Error! {:?}", e),
     }
 }
@@ -97,9 +99,17 @@ fn tree(cli: &Cli) -> io::Result<String> {
         files: 0,
     };
 
+    #[cfg(test)]
     out.push_str(format!("{}\n", cli.path.to_string_lossy()).as_str());
+    #[cfg(not(test))]
+    print!("{}\n", cli.path.to_string_lossy());
+
     tree_recurse(&cli.path, cli, &mut out, "", 0, &mut info)?;
+
+    #[cfg(test)]
     out.push_str(format!("{} directories and {} files", info.directories, info.files).as_str());
+    #[cfg(not(test))]
+    print!("{} directories and {} files", info.directories, info.files);
 
     Ok(out)
 }
@@ -137,9 +147,15 @@ fn tree_recurse(
         let last = it.peek().is_none();
 
         if !cli.overview || i < OVERVIEW_LIMIT {
+            #[cfg(test)]
             out.push_str(&get_line(&p, prefix, cli, depth, last));
+            #[cfg(not(test))]
+            print!("{}", get_line(&p, prefix, cli, depth, last));
         } else if cli.overview && i == OVERVIEW_LIMIT {
-            out.push_str(format! {"{}    {}\n", prefix, "..."}.as_str());
+            #[cfg(test)]
+            out.push_str(format!("{}    {}\n", prefix, "...").as_str());
+            #[cfg(not(test))]
+            print!("{}    {}\n", prefix, "...");
         }
 
         if p.is_dir() {
