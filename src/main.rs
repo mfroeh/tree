@@ -1,3 +1,5 @@
+mod file;
+
 use colored::{Color, Colorize};
 use std::io;
 use std::path::PathBuf;
@@ -60,6 +62,10 @@ struct Cli {
     /// Disables coloring
     #[arg(long, default_value_t = false)]
     no_color: bool,
+    
+    /// Disables icons
+    #[arg(long, default_value_t = false)]
+    no_icons: bool,
 
     #[arg(long, default_value_t = false)]
     overview: bool,
@@ -146,11 +152,13 @@ fn tree_recurse(
     while let Some(p) = it.next() {
         let last = it.peek().is_none();
 
+        let file = file::File::from(p);
+
         if !cli.overview || i < OVERVIEW_LIMIT {
             #[cfg(test)]
-            out.push_str(&get_line(&p, prefix, cli, depth, last));
+            out.push_str(&get_line(&file, prefix, cli, last));
             #[cfg(not(test))]
-            print!("{}", get_line(&p, prefix, cli, depth, last));
+            print!("{}", get_line(&file, prefix, cli, last));
         } else if cli.overview && i == OVERVIEW_LIMIT {
             #[cfg(test)]
             out.push_str(format!("{}    {}\n", prefix, "...").as_str());
@@ -176,28 +184,23 @@ fn ignore(path: &PathBuf, cli: &Cli) -> bool {
         || cli.directory && !path.is_dir()
 }
 
-fn get_line(path: &PathBuf, prefix: &str, cli: &Cli, depth: u32, last: bool) -> String {
-    let filename = if cli.full {
-        path.to_string_lossy()
-    } else {
-        path.file_name().unwrap().to_string_lossy()
-    };
-
-    let colored_str = if (depth as usize) < COLOR_COUNT {
-        filename.color(COLORS[depth as usize])
-    } else {
-        filename.white()
-    };
+fn get_line(file: &file::File, prefix: &str, cli: &Cli, last: bool) -> String {
+    // let colored_str = if (depth as usize) < COLOR_COUNT {
+    //     filename.color(COLORS[depth as usize])
+    // } else {
+    //     filename.white()
+    // };
 
     format!(
         "{}{} {}\n",
         prefix,
         if last { "└──" } else { "├──" },
-        if cli.no_color {
-            filename.to_owned().to_string()
-        } else {
-            colored_str.to_string()
-        }
+        file.to_string(cli),
+        // if cli.no_color {
+        //     filename.to_owned().to_string()
+        // } else {
+        //     colored_str.to_string()
+        // }
     )
 }
 
