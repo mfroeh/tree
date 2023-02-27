@@ -218,6 +218,7 @@ mod tests {
             directory: false,
             full: false,
             no_color: true,
+            no_icons: true,
             overview: true,
         }
     }
