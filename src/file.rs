@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fs::read_link, path::PathBuf};
 
+use colored::{Color, Colorize};
+
 use crate::Cli;
 
 #[derive(PartialEq)]
@@ -31,12 +33,28 @@ impl FileType {
             Self::Special => "\u{f2dc}".into(),     // 
         }
     }
+
+    fn get_color(&self) -> Color {
+        match self {
+            Self::Directory => Color::Blue,
+            Self::File => Color::BrightWhite,
+            Self::Pipe => Color::White,        // 
+            Self::Socket => Color::White,      // 
+            Self::Executable => Color::Green,  // 
+            Self::SymlinkDir => Color::Red,    // 
+            Self::SymlinkFile => Color::Red,   // 
+            Self::DeviceChar => Color::White,  // 
+            Self::DeviceBlock => Color::White, // ﰩ
+            Self::Special => Color::White,     // 
+        }
+    }
 }
 
 pub struct File {
     path: PathBuf,
     filetype: FileType,
     icon: String,
+    color: Color,
 }
 
 impl From<&PathBuf> for File {
@@ -70,6 +88,7 @@ impl From<&PathBuf> for File {
         Self {
             path: p.to_owned(),
             icon,
+            color: filetype.get_color(),
             filetype,
         }
     }
@@ -93,7 +112,15 @@ impl File {
             }
         }
 
-        format!("{} {}", if cli.no_icons { "" } else { &self.icon }, name)
+        format!(
+            "{} {}",
+            if cli.no_icons { "" } else { &self.icon },
+            if cli.no_color {
+                name
+            } else {
+                name.color(self.color).to_string()
+            }
+        )
     }
 }
 

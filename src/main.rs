@@ -62,7 +62,7 @@ struct Cli {
     /// Disables coloring
     #[arg(long, default_value_t = false)]
     no_color: bool,
-    
+
     /// Disables icons
     #[arg(long, default_value_t = false)]
     no_icons: bool,
