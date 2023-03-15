@@ -1,10 +1,10 @@
 use phf::phf_map;
 use std::fmt::Display;
+use std::io;
 use std::os::unix::fs::FileTypeExt;
 use std::{
     ffi::OsStr,
     fs,
-    io::{self, Write},
     path::Path,
 };
 
