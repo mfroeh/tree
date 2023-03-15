@@ -43,13 +43,13 @@ impl Tree {
     }
 
     fn tree_rec<W: Write>(&self, writer: &mut W, state: State) -> io::Result<()> {
-        if state.depth >= self.config.limit {
-            return Ok(());
-        }
-
         if state.depth == 0 {
             let file = File::from_path(&state.dir)?;
             writeln!(writer, "{}", file).expect("Unable to write");
+        }
+
+        if state.depth >= self.config.limit {
+            return Ok(());
         }
 
         let mut entries: Vec<DirEntry> = fs::read_dir(&state.dir)?
@@ -85,12 +85,10 @@ impl Tree {
 
     fn entry_predicate(&self, entry: &DirEntry, state: &State) -> bool {
         if let Ok(meta) = entry.metadata() {
-            // -d
             if self.config.directory_only && !meta.is_dir() {
                 return false;
             }
 
-            // -a
             if !self.config.all
                 && entry
                     .file_name()

@@ -7,11 +7,12 @@ use std::{fs, path::Path};
 pub enum FileType {
     File,
     Directory,
-    Symlink,
+    SymlinkFile,
     BlockDevice,
     CharDevice,
-    FiFo,
+    Pipe,
     Socket,
+    SymlinkDirectory,
 }
 
 pub struct File<'a> {
@@ -44,13 +45,17 @@ impl<'a> File<'a> {
         if ft.is_dir() {
             file.ftype = FileType::Directory;
         } else if ft.is_symlink() {
-            file.ftype = FileType::Symlink;
+            file.ftype = if fs::read_link(path)?.is_dir() {
+                FileType::SymlinkDirectory
+            } else {
+                FileType::SymlinkFile
+            };
         } else if ft.is_block_device() {
             file.ftype = FileType::BlockDevice;
         } else if ft.is_char_device() {
             file.ftype = FileType::CharDevice;
         } else if ft.is_fifo() {
-            file.ftype = FileType::FiFo;
+            file.ftype = FileType::Pipe;
         } else if ft.is_socket() {
             file.ftype = FileType::Socket;
         }
@@ -83,13 +88,14 @@ impl<'a> Display for File<'a> {
 
 fn icons_by_type(file: &File) -> &'static str {
     match file.ftype {
-        FileType::File => "\u{f016}",        // 
-        FileType::Directory => "\u{f115}",   // 
-        FileType::Symlink => "\u{f481}",     // 
-        FileType::BlockDevice => "\u{fc29}", // ﰩ
-        FileType::CharDevice => "\u{e601}",  // 
-        FileType::FiFo => "\u{f731}",        // 
-        FileType::Socket => "\u{f6a7}",      // 
+        FileType::File => "\u{f016}",             // 
+        FileType::Directory => "\u{f115}",        // 
+        FileType::SymlinkFile => "\u{f481}",      // 
+        FileType::SymlinkDirectory => "\u{f482}", // 
+        FileType::BlockDevice => "\u{fc29}",      // ﰩ
+        FileType::CharDevice => "\u{e601}",       // 
+        FileType::Pipe => "\u{f731}",             // 
+        FileType::Socket => "\u{f6a7}",           // 
     }
 }
 

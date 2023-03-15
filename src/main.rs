@@ -1,10 +1,9 @@
 use std::{
-    env, io,
-    path::{Path, PathBuf},
+    io,
+    path::PathBuf,
 };
 
 use clap::Parser;
-use tree::tree;
 
 mod file;
 mod tree;
@@ -24,7 +23,7 @@ pub struct Config {
     directory_only: bool,
 
     /// The recursion depth
-    #[arg(short, long, default_value_t = 3)]
+    #[arg(short, long, default_value_t = 5)]
     limit: u32,
 }
 
