@@ -25,9 +25,9 @@ fn tree<W: Write>(writer: &mut W, state: State) -> io::Result<()> {
         let path = entry.path();
         let file = File::from_path(&path)?;
 
-        write!(
+        writeln!(
             writer,
-            "{:<d$}{name:}\n",
+            "{:<d$}{name:}",
             "",
             d = state.depth as usize,
             name = file,
@@ -44,8 +44,6 @@ fn tree<W: Write>(writer: &mut W, state: State) -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use std::io;
-
     use super::*;
 
     #[test]
