@@ -12,7 +12,7 @@ const FRONT: &str = "├──";
 const FRONT_LAST: &str = "└──";
 
 pub fn tree<W: Write>(writer: &mut W, config: Config) -> io::Result<()> {
-    let dir = config.directory;
+    let dir = config.dir;
     let state = State::new(dir, 0, "");
 
     tree_rec(writer, state)?;

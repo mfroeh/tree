@@ -2,11 +2,7 @@ use phf::phf_map;
 use std::fmt::Display;
 use std::io;
 use std::os::unix::fs::FileTypeExt;
-use std::{
-    ffi::OsStr,
-    fs,
-    path::Path,
-};
+use std::{fs, path::Path};
 
 pub enum FileType {
     File,
@@ -36,13 +32,17 @@ impl Display for FileType {
 
 pub struct File<'a> {
     path: &'a Path,
-    name: &'a OsStr,
+    name: &'a str,
     ftype: FileType,
 }
 
 impl<'a> File<'a> {
     pub fn from_path(path: &Path) -> io::Result<File> {
-        let name = path.file_name().expect("Failed to get filename from path");
+        let name = if let Some(osstr) = path.file_name() {
+            osstr.to_str().expect("Not valid UTF-8")
+        } else {
+            path.to_str().expect("Not valid UTF-8")
+        };
 
         let mut file = File {
             path,
@@ -77,7 +77,7 @@ impl<'a> File<'a> {
 
 impl<'a> Display for File<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let name = self.name.to_str().expect("Not valid UTF-8");
+        let name = self.name;
 
         // Try name
         if let Some(&icon) = ICONS_BY_NAME.get(name) {
@@ -85,7 +85,8 @@ impl<'a> Display for File<'a> {
         }
 
         // Try extension
-        if let Some(ext) = name.split('.').last() {
+        if let Some(ext) = self.path.extension() {
+            let ext = ext.to_str().expect("Not valid UTF_8");
             if let Some(&icon) = ICONS_BY_EXTENSION.get(ext) {
                 return write!(f, "{} {}", icon, name);
             }
