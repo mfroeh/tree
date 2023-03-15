@@ -4,31 +4,32 @@ use std::{
 };
 
 use clap::Parser;
+use tree::tree;
 
 mod file;
 mod tree;
 
 #[derive(Parser)]
-pub struct Cli {
-    directory: Option<PathBuf>,
-}
-
+#[command(author, version, about)]
 pub struct Config {
-    dir: PathBuf,
-}
+    #[arg(default_value = ".")]
+    directory: PathBuf,
 
-impl TryFrom<Cli> for Config {
-    type Error = io::Error;
+    /// Do not ignore entries starting with .
+    #[arg(short, long)]
+    all: bool,
 
-    fn try_from(cli: Cli) -> Result<Self, Self::Error> {
-        let dir = cli.directory.unwrap_or(PathBuf::from("."));
-        Ok(Config { dir })
-    }
+    /// Only display directories ignoring all files
+    #[arg(short, long)]
+    directory_only: bool,
+
+    /// The recursion depth
+    #[arg(short, long, default_value_t = 3)]
+    limit: u32,
 }
 
 fn main() -> io::Result<()> {
-    let cli = Cli::parse();
-    let config = Config::try_from(cli)?;
+    let config = Config::parse();
 
-    tree::tree(&mut io::stdout(), config)
+    tree::tree(config)
 }

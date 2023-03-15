@@ -1,7 +1,9 @@
 [package]
+authors = ["mfroeh <mfroeh0@pm.me>"]
 name = "mtree"
 version = "0.1.0"
 edition = "2021"
+description = "A tree command with icons and colors"
 
 [dependencies]
 clap = { version = "4.1.6", features = ["derive"] }

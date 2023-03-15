@@ -14,22 +14,6 @@ pub enum FileType {
     Socket,
 }
 
-impl Display for FileType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let icon: &str = match self {
-            Self::File => "\u{f016}",        // 
-            Self::Directory => "\u{f115}",   // 
-            Self::Symlink => "\u{f481}",     // 
-            Self::BlockDevice => "\u{fc29}", // ﰩ
-            Self::CharDevice => "\u{e601}",  // 
-            Self::FiFo => "\u{f731}",        // 
-            Self::Socket => "\u{f6a7}",      // 
-        };
-
-        write!(f, "{}", icon)
-    }
-}
-
 pub struct File<'a> {
     path: &'a Path,
     name: &'a str,
@@ -93,7 +77,19 @@ impl<'a> Display for File<'a> {
         }
 
         // Use filetype
-        write!(f, "{} {}", self.ftype, name)
+        write!(f, "{} {}", icons_by_type(self), name)
+    }
+}
+
+fn icons_by_type(file: &File) -> &'static str {
+    match file.ftype {
+        FileType::File => "\u{f016}",        // 
+        FileType::Directory => "\u{f115}",   // 
+        FileType::Symlink => "\u{f481}",     // 
+        FileType::BlockDevice => "\u{fc29}", // ﰩ
+        FileType::CharDevice => "\u{e601}",  // 
+        FileType::FiFo => "\u{f731}",        // 
+        FileType::Socket => "\u{f6a7}",      // 
     }
 }
 
