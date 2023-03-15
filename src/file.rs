@@ -2,17 +2,23 @@ use phf::phf_map;
 use std::fmt::Display;
 use std::io;
 use std::os::unix::fs::FileTypeExt;
+use std::os::unix::fs::PermissionsExt;
 use std::{fs, path::Path};
 
+// https://man7.org/linux/man-pages/man0/sys_stat.h.0p.html
+const S_IXUSR: u32 = 0100;
+const S_IXGRP: u32 = 0010;
+const S_IXOTH: u32 = 0001;
+
 pub enum FileType {
-    File,
+    File { exec: bool },
     Directory,
-    SymlinkFile,
+    Symlink { to_dir: bool, valid: bool },
     BlockDevice,
     CharDevice,
     Pipe,
     Socket,
-    SymlinkDirectory,
+    Special,
 }
 
 pub struct File<'a> {
@@ -32,7 +38,7 @@ impl<'a> File<'a> {
         let mut file = File {
             path,
             name,
-            ftype: FileType::File,
+            ftype: FileType::Special,
         };
 
         let metadata = if path.is_symlink() {
@@ -42,13 +48,18 @@ impl<'a> File<'a> {
         };
 
         let ft = metadata.file_type();
-        if ft.is_dir() {
+        if ft.is_file() {
+            let bits = metadata.permissions().mode();
+            let is_exec =
+                bits & S_IXUSR == S_IXUSR || bits & S_IXGRP == S_IXGRP || bits & S_IXOTH == S_IXOTH;
+            file.ftype = FileType::File { exec: is_exec };
+        } else if ft.is_dir() {
             file.ftype = FileType::Directory;
         } else if ft.is_symlink() {
-            file.ftype = if fs::read_link(path)?.is_dir() {
-                FileType::SymlinkDirectory
-            } else {
-                FileType::SymlinkFile
+            let target = fs::read_link(path)?;
+            file.ftype = FileType::Symlink {
+                to_dir: target.is_dir(),
+                valid: target.exists(),
             };
         } else if ft.is_block_device() {
             file.ftype = FileType::BlockDevice;
@@ -88,14 +99,16 @@ impl<'a> Display for File<'a> {
 
 fn icons_by_type(file: &File) -> &'static str {
     match file.ftype {
-        FileType::File => "\u{f016}",             // 
-        FileType::Directory => "\u{f115}",        // 
-        FileType::SymlinkFile => "\u{f481}",      // 
-        FileType::SymlinkDirectory => "\u{f482}", // 
-        FileType::BlockDevice => "\u{fc29}",      // ﰩ
-        FileType::CharDevice => "\u{e601}",       // 
-        FileType::Pipe => "\u{f731}",             // 
-        FileType::Socket => "\u{f6a7}",           // 
+        FileType::File { exec } if exec => "\u{f489}", //""
+        FileType::File { .. } => "\u{f016}",           // 
+        FileType::Directory => "\u{f115}",             // 
+        FileType::Symlink { to_dir, .. } if to_dir => "\u{f482}", // 
+        FileType::Symlink { .. } => "\u{f481}",        // 
+        FileType::BlockDevice => "\u{fc29}",           // ﰩ
+        FileType::CharDevice => "\u{e601}",            // 
+        FileType::Pipe => "\u{f731}",                  // 
+        FileType::Socket => "\u{f6a7}",                // 
+        FileType::Special => "\u{f2dc}",               // 
     }
 }
 
