@@ -1,8 +1,10 @@
 use phf::phf_map;
+use std::ffi::OsStr;
 use std::fmt::Display;
 use std::io;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
 use std::{fs, path::Path};
 
 // https://man7.org/linux/man-pages/man0/sys_stat.h.0p.html
@@ -11,9 +13,15 @@ const S_IXGRP: u32 = 0010;
 const S_IXOTH: u32 = 0001;
 
 pub enum FileType {
-    File { exec: bool },
+    File {
+        exec: bool,
+    },
     Directory,
-    Symlink { to_dir: bool, valid: bool },
+    Symlink {
+        target: PathBuf,
+        to_dir: bool,
+        valid: bool,
+    },
     BlockDevice,
     CharDevice,
     Pipe,
@@ -60,6 +68,7 @@ impl<'a> File<'a> {
             file.ftype = FileType::Symlink {
                 to_dir: target.is_dir(),
                 valid: target.exists(),
+                target,
             };
         } else if ft.is_block_device() {
             file.ftype = FileType::BlockDevice;
@@ -78,22 +87,28 @@ impl<'a> File<'a> {
 impl<'a> Display for File<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = self.name;
+        let ext = if let Some(ext) = self.path.extension() {
+            ext.to_str().expect("Not valid UTF-8")
+        } else {
+            ""
+        };
 
-        // Try name
+        // Try name icon
         if let Some(&icon) = ICONS_BY_NAME.get(name) {
-            return write!(f, "{} {}", icon, name);
+            write!(f, "{} {}", icon, name)?;
+        }
+        // Try extension icon
+        else if let Some(&icon) = ICONS_BY_EXTENSION.get(ext) {
+            write!(f, "{} {}", icon, name)?;
+        // Default to file type
+        } else {
+            write!(f, "{} {}", icons_by_type(self), name)?;
         }
 
-        // Try extension
-        if let Some(ext) = self.path.extension() {
-            let ext = ext.to_str().expect("Not valid UTF_8");
-            if let Some(&icon) = ICONS_BY_EXTENSION.get(ext) {
-                return write!(f, "{} {}", icon, name);
-            }
+        if let FileType::Symlink { target, .. } = &self.ftype {
+            write!(f, " ⇒ {}", target.to_str().expect("Not valid UTF-8"))?;
         }
-
-        // Use filetype
-        write!(f, "{} {}", icons_by_type(self), name)
+        Ok(())
     }
 }
 
